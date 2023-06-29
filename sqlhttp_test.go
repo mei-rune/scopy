@@ -1,6 +1,7 @@
 package scopy
 
 import (
+	"os"
 	"testing"
 )
 

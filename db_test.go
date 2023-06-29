@@ -48,6 +48,45 @@ func TestDB(t *testing.T) {
 	runTest(t, target)
 }
 
+func TestDBOpen(t *testing.T) {
+	username := os.Getenv("mysql_username")
+	if username == "" {
+		username = "moo_test"
+	}
+	password := os.Getenv("mysql_password")
+	if password == "" {
+		password = "moo_test_password"
+	}
+	dbname := os.Getenv("mysql_dbname")
+	if dbname == "" {
+		dbname = "mytest"
+	}
+
+	urlstr := "mysql://192.168.1.2:3306/"+dbname+"?timeout=90s&collation=utf8mb4_unicode_ci&parseTime=true"
+
+	target, _, err := Open(urlstr, username, password)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	_, err = target.(*dbTarget).conn.Exec(DefaultResetSQL)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	s := strings.Replace(DefaultInitSQL, "bytea", "blob", -1)
+	_, err = target.(*dbTarget).conn.Exec(s)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	runTest(t, target)
+	runTest(t, target)
+}
+
 func runTest(t *testing.T, target Session) {
 	excepted := "adsdfsddf"
 
