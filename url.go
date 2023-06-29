@@ -1,12 +1,12 @@
 package scopy
 
 import (
+	"errors"
 	"net/url"
 	"strconv"
 	"strings"
-  "errors"
 
-  "github.com/xo/dburl"
+	"github.com/xo/dburl"
 )
 
 func Open(urlstr, username, password string) (Session, string, error) {
@@ -26,7 +26,7 @@ func Open(urlstr, username, password string) (Session, string, error) {
 
 		dbname := queryParams.Get("sc_dbname")
 		dbTable := queryParams.Get("sc_dbtable")
-    maxSize, _ := strconv.Atoi(queryParams.Get("sc_max_size"))
+		maxSize, _ := strconv.Atoi(queryParams.Get("sc_max_size"))
 
 		sess, err = DBHTTP(u.String(), dbname, username, password, dbTable, maxSize)
 		if err != nil {
@@ -35,11 +35,11 @@ func Open(urlstr, username, password string) (Session, string, error) {
 	} else if strings.HasPrefix(urlstr, "db+") {
 		urlstr = strings.TrimPrefix(urlstr, "db+")
 
-    v, err := url.Parse(urlstr)
-    if err != nil {
-      return nil, "", errWrap(err, "解析 url 失败")
-    }
-    v.User = url.UserPassword(username, password)
+		v, err := url.Parse(urlstr)
+		if err != nil {
+			return nil, "", errWrap(err, "解析 url 失败")
+		}
+		v.User = url.UserPassword(username, password)
 
 		u, err := dburl.Parse(v.String())
 		if err != nil {
@@ -75,5 +75,5 @@ func Open(urlstr, username, password string) (Session, string, error) {
 }
 
 func errWrap(err error, msg string) error {
-  return errors.New(msg + ": "+ err.Error())
+	return errors.New(msg + ": " + err.Error())
 }

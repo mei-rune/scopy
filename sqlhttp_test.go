@@ -1,12 +1,20 @@
 package scopy
 
 import (
+	"fmt"
 	"os"
 	"testing"
 )
 
 func TestSqlHttp(t *testing.T) {
-	target, err := DBHTTP("http://localhost:8083/aceql", "sampledb", os.Getenv("db_username"), os.Getenv("db_password"), "", 0)
+	dbname := os.Getenv("sqlhttp_db_name")
+	dbusername := os.Getenv("sqlhttp_db_username")
+	dbpassword := os.Getenv("sqlhttp_db_password")
+
+	fmt.Println(dbname, dbusername, dbpassword)
+
+	target, err := DBHTTP("http://localhost:8083/aceql",
+		dbname, dbusername, dbpassword, "", 0)
 	if err != nil {
 		t.Error(err)
 		return

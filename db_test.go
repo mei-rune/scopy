@@ -62,7 +62,7 @@ func TestDBOpen(t *testing.T) {
 		dbname = "mytest"
 	}
 
-	urlstr := "mysql://192.168.1.2:3306/"+dbname+"?timeout=90s&collation=utf8mb4_unicode_ci&parseTime=true"
+	urlstr := "db+mysql://192.168.1.2:3306/" + dbname + "?timeout=90s&collation=utf8mb4_unicode_ci&parseTime=true"
 
 	target, _, err := Open(urlstr, username, password)
 	if err != nil {
