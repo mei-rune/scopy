@@ -3,6 +3,7 @@ package scopy
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -62,13 +63,13 @@ func TestSqlHttpOpen(t *testing.T) {
 		return
 	}
 
-	_, err = target.(*sqlhttpTarget).c.ExecuteUpdate(sess, DefaultResetSQL, nil, false)
+	_, err = target.(*sqlhttpTarget).c.ExecuteUpdate(sess, strings.Replace(DefaultResetSQL, "tpt_files", "abc", -1), nil, false)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	_, err = target.(*sqlhttpTarget).c.ExecuteUpdate(sess, DefaultInitSQL, nil, false)
+	_, err = target.(*sqlhttpTarget).c.ExecuteUpdate(sess, strings.Replace(DefaultInitSQL, "tpt_files", "abc", -1), nil, false)
 	if err != nil {
 		t.Error(err)
 		return
