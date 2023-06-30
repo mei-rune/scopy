@@ -40,14 +40,17 @@ func Open(urlstr, username, password string) (Session, string, error) {
 			return nil, "", errWrap(err, "解析 url 失败")
 		}
 		v.User = url.UserPassword(username, password)
+		queryParams := v.Query()
+		dbTable := queryParams.Get("sc_dbtable")
+		maxSize, _ := strconv.Atoi(queryParams.Get("sc_max_size"))
+		queryParams.Del("sc_dbtable")
+		queryParams.Del("sc_max_size")
+		v.RawQuery = queryParams.Encode()
 
 		u, err := dburl.Parse(v.String())
 		if err != nil {
 			return nil, "", err
 		}
-		queryParams := u.URL.Query()
-		dbTable := queryParams.Get("sc_dbtable")
-		maxSize, _ := strconv.Atoi(queryParams.Get("sc_max_size"))
 
 		sess, err = DB(u.Driver, u.DSN, dbTable, maxSize)
 		if err != nil {
