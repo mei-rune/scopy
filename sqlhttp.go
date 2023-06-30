@@ -357,7 +357,8 @@ func (r *sqlhttpFileReader) read(id string) ([]byte, error) {
 		if qr.QueryTypes[0] == aceql_http.CLOB ||
 			qr.QueryTypes[0] == aceql_http.BLOB ||
 			qr.QueryTypes[0] == aceql_http.BINARY ||
-			qr.QueryTypes[0] == aceql_http.LONGVARBINARY {
+			qr.QueryTypes[0] == aceql_http.LONGVARBINARY ||
+			qr.QueryTypes[0] == aceql_http.VARBINARY {
 			return r.st.c.GetBlob(sess, s)
 		}
 	}
