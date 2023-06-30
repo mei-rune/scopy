@@ -24,7 +24,9 @@ var (
   partitioning_count             int,
   partitioning_sequence          int,
   data              bytea,
-  created_at        timestamp
+  created_at        timestamp,
+
+  unique(uuid, partitioning_sequence)
 );`
 	DefaultInsertSQL       = `insert into tpt_files(uuid, partitioning_count, partitioning_sequence, data, created_at) values(?, ?, ?, ?, now())`
 	DefaultReadSQL         = `select id, uuid, partitioning_count, partitioning_sequence, data, created_at from tpt_files limit 1`
@@ -67,6 +69,7 @@ func DB(dbDrv, dbURL, dbTable string, maxSize int) (*dbTarget, error) {
 		target.listSql = strings.Replace(DefaultListSql, "tpt_files", dbTable, -1)
 		target.existSql = strings.Replace(DefaultExistSql, "tpt_files", dbTable, -1)
 	}
+
 	return target, nil
 }
 
@@ -168,12 +171,30 @@ func (w *dbFileWriter) write(last bool, data []byte) error {
 	}
 
 	var err error
+	retried := false
+
+retry:
+
 	if w.tx != nil {
 		_, err = w.tx.Exec(w.st.insertSql, w.uuid, total, w.idx, data)
 	} else {
 		_, err = w.st.conn.Exec(w.st.insertSql, w.uuid, total, w.idx, data)
 	}
 	if err != nil {
+		if strings.Contains(err.Error(), "Error 1062") {
+			if w.tx != nil {
+				_, err = w.tx.Exec(w.st.deleteSqlByUUID, w.uuid)
+			} else {
+				_, err = w.st.conn.Exec(w.st.deleteSqlByUUID, w.uuid)
+			}
+			if err == nil {
+				if !retried {
+					retried = true
+					goto retry
+				}
+			}
+		}
+
 		return err
 	}
 	w.idx++

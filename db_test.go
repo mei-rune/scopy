@@ -1,6 +1,7 @@
 package scopy
 
 import (
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -108,6 +109,18 @@ func runTest(t *testing.T, target Session) {
 		t.Error(err)
 		return
 	}
+	io.WriteString(writer, "abc")
+	err = writer.Close()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	writer, err = target.Write("AAA.txt")
+	if err != nil {
+		t.Error(err)
+		return
+	}
 
 	for i := 0; i < 10; i++ {
 		_, err = writer.Write([]byte(excepted))
@@ -165,6 +178,20 @@ func runTest(t *testing.T, target Session) {
 	}
 	if !found {
 		t.Error("Not found")
+	}
+
+
+	exists, err = target.Exists("BBB.txt")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if exists {
+		err = target.Delete("BBB.txt")
+		if err != nil {
+			t.Error(err)
+			return
+		}
 	}
 
 	err = target.Rename("AAA.txt", "BBB.txt")

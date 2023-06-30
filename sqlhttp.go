@@ -181,7 +181,9 @@ func (w *sqlhttpFileWriter) write(last bool, data []byte) error {
 	} else if len(data) > 10*1024 {
 		dataValue.Type = aceql_http.BLOB
 	}
-
+	
+	retried := false
+retry:
 	_, err = w.st.c.ExecuteUpdate(sess, w.st.insertSql, []aceql_http.ParamValue{
 		{
 			Type:  aceql_http.VARCHAR,
@@ -198,6 +200,20 @@ func (w *sqlhttpFileWriter) write(last bool, data []byte) error {
 		dataValue,
 	}, true)
 	if err != nil {
+		if strings.Contains(err.Error(), "Duplicate entry") {
+				_, err = w.st.c.ExecuteUpdate(sess, w.st.deleteSqlByUUID, []aceql_http.ParamValue{
+					{
+						Type:  aceql_http.VARCHAR,
+						Value: w.uuid,
+					},
+				}, true)
+			if err == nil {
+				if !retried {
+					retried = true
+					goto retry
+				}
+			}
+		}
 		return err
 	}
 	w.idx++
@@ -340,7 +356,8 @@ func (r *sqlhttpFileReader) read(id string) ([]byte, error) {
 	if len(qr.QueryTypes) > 0 {
 		if qr.QueryTypes[0] == aceql_http.CLOB ||
 			qr.QueryTypes[0] == aceql_http.BLOB ||
-			qr.QueryTypes[0] == aceql_http.BINARY {
+			qr.QueryTypes[0] == aceql_http.BINARY ||
+			qr.QueryTypes[0] == aceql_http.LONGVARBINARY {
 			return r.st.c.GetBlob(sess, s)
 		}
 	}
