@@ -13,6 +13,8 @@ const (
 	DataNone  = 0
 	DataStart = -1
 	DataEnd   = -2
+
+	DefaultMaxSize = 5 * 1024 * 1024
 )
 
 var (
@@ -47,7 +49,7 @@ func DB(dbDrv, dbURL, dbTable string, maxSize int) (*dbTarget, error) {
 		return nil, err
 	}
 	if maxSize < 1024 {
-		maxSize = 10 * 1024 * 1024
+		maxSize = DefaultMaxSize
 	}
 	target := &dbTarget{
 		conn:    conn,

@@ -19,6 +19,10 @@ func DBHTTP(baseURL, dbname, username, password, dbTable string, maxSize int) (*
 		LobAutoUpload: true,
 	}
 
+	if maxSize < 1024 {
+		maxSize = DefaultMaxSize
+	}
+
 	target := &sqlhttpTarget{
 		c: c,
 
@@ -268,7 +272,7 @@ func (st *sqlhttpTarget) Write(remotePath string) (io.WriteCloser, error) {
 		return nil, err
 	}
 
-	savepoint, err := st.c.SetSavepoint(sess)
+	savepoint, err := st.c.SetNamedSavepoint(sess, "sp" + aceql_http.GenerateID())
 	if err != nil {
 		return nil, err
 	}
