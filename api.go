@@ -185,6 +185,11 @@ func (e *ErrDownloadFiles) Error() string {
 }
 
 func DownloadDir(ctx context.Context, sess Session, remoteDir string, localDir string, deleteAfter func(remote, local string) bool) error {
+	logger := log.LoggerOrEmptyFromContext(ctx)
+	return downloadDir(ctx, logger, sess, remoteDir, localDir, deleteAfter)
+}
+
+func downloadDir(ctx context.Context, logger log.Logger, sess Session, remoteDir string, localDir string, deleteAfter func(remote, local string) bool) error {
 	fis, err := sess.List(remoteDir)
 	if err != nil {
 		return errors.Wrap(err, "枚举远程目录失败")
@@ -193,7 +198,6 @@ func DownloadDir(ctx context.Context, sess Session, remoteDir string, localDir s
 	var filenames []string
 	var errorList []error
 
-	logger := log.LoggerOrEmptyFromContext(ctx)
 	for _, fi := range fis {
 		filename := filepath.Join(localDir, fi.Name())
 		remoteFile := fi.Name()
@@ -202,7 +206,7 @@ func DownloadDir(ctx context.Context, sess Session, remoteDir string, localDir s
 		}
 
 		if fi.IsDir() {
-			err = DownloadDir(ctx, sess, remoteFile, filename, deleteAfter)
+			err = downloadDir(ctx, logger, sess, remoteFile, filename, deleteAfter)
 			if err != nil {
 				if e, ok := err.(*ErrDownloadFiles); ok {
 					filenames = append(filenames, e.Filenames...)
