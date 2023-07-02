@@ -180,7 +180,6 @@ func runTest(t *testing.T, target Session) {
 		t.Error("Not found")
 	}
 
-
 	exists, err = target.Exists("BBB.txt")
 	if err != nil {
 		t.Error(err)
