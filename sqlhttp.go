@@ -130,6 +130,9 @@ func (w *sqlhttpFileWriter) Close() error {
 
 			err = w.st.c.RollbackSavepoint(sess, w.savepoint.ID, w.savepoint.Name)
 			if err != nil {
+				if aceql_http.IsInvalidOrExipredConnection(err) {
+					w.st.ClearSession()
+				}
 				return joinError(w.lastError, err)
 			}
 			w.savepoint = nil
@@ -146,6 +149,9 @@ func (w *sqlhttpFileWriter) Close() error {
 
 		w.lastError = w.st.c.ReleaseSavepoint(sess, w.savepoint.ID, w.savepoint.Name)
 		if w.lastError != nil {
+			if aceql_http.IsInvalidOrExipredConnection(err) {
+				w.st.ClearSession()
+			}
 			return w.lastError
 		}
 		w.savepoint = nil
@@ -219,7 +225,7 @@ retry:
 		dataValue,
 	}, true)
 	if err != nil {
-		if strings.Contains(err.Error(), "Invalid or exipred Connection") {
+		if aceql_http.IsInvalidOrExipredConnection(err) {
 			w.st.ClearSession()
 
 			if !retried {
@@ -267,13 +273,22 @@ func (st *sqlhttpTarget) Write(remotePath string) (io.WriteCloser, error) {
 	// if err != nil {
 	// 	return nil, err
 	// }
+	retryCount := 0
+retry:
 	sess, err := st.GetSession()
 	if err != nil {
 		return nil, err
 	}
 
-	savepoint, err := st.c.SetNamedSavepoint(sess, "sp" + aceql_http.GenerateID())
+	savepoint, err := st.c.SetNamedSavepoint(sess, "sp-" + aceql_http.GenerateID())
 	if err != nil {
+		if aceql_http.IsInvalidOrExipredConnection(err) {
+			st.ClearSession()
+			if retryCount < 1 {
+				retryCount = 1
+				goto retry
+			}
+		}
 		return nil, err
 	}
 
@@ -364,7 +379,7 @@ func (r *sqlhttpFileReader) read(id string) ([]byte, error) {
 	sqlstr := strings.Replace(r.st.readDataSql, "?", id, 1)
 	qr, err := r.st.c.ExecuteQuery(sess, sqlstr, nil, true)
 	if err != nil {
-		if strings.Contains(err.Error(), "Invalid or exipred Connection") {
+		if aceql_http.IsInvalidOrExipredConnection(err) {
 			r.st.ClearSession()
 		}
 		return nil, err
@@ -399,7 +414,7 @@ func (r *sqlhttpFileReader) read(id string) ([]byte, error) {
 			qr.QueryTypes[0] == aceql_http.LONGVARBINARY ||
 			qr.QueryTypes[0] == aceql_http.VARBINARY {
 			bs, err := r.st.c.GetBlob(sess, s)
-			if err != nil && strings.Contains(err.Error(), "Invalid or exipred Connection") {
+			if err != nil && aceql_http.IsInvalidOrExipredConnection(err) {
 				r.st.ClearSession()
 			}
 			return bs, err
@@ -425,7 +440,7 @@ func (st *sqlhttpTarget) Read(remotePath string) (io.ReadCloser, error) {
 
 	results, err := st.c.ExecuteQuery(sess, sqlstr, nil, true)
 	if err != nil {
-		if strings.Contains(err.Error(), "Invalid or exipred Connection") {
+		if aceql_http.IsInvalidOrExipredConnection(err) {
 			st.ClearSession()
 		}
 		return nil, err
@@ -467,7 +482,7 @@ func (st *sqlhttpTarget) List(remotePath string) ([]fs.FileInfo, error) {
 	}
 	results, err := st.c.ExecuteQuery(sess, st.listSql, nil, true)
 	if err != nil {
-		if strings.Contains(err.Error(), "Invalid or exipred Connection") {
+		if aceql_http.IsInvalidOrExipredConnection(err) {
 			st.ClearSession()
 		}
 		return nil, err
@@ -548,7 +563,7 @@ func (st *sqlhttpTarget) Rename(from, to string) error {
 			Value: from,
 		},
 	}, true)
-	if err != nil && strings.Contains(err.Error(), "Invalid or exipred Connection") {
+	if err != nil && aceql_http.IsInvalidOrExipredConnection(err) {
 		st.ClearSession()
 	}
 	return err
@@ -566,7 +581,7 @@ func (st *sqlhttpTarget) Delete(remotePath string) error {
 			Value: remotePath,
 		},
 	}, true)
-	if err != nil && strings.Contains(err.Error(), "Invalid or exipred Connection") {
+	if err != nil && aceql_http.IsInvalidOrExipredConnection(err) {
 		st.ClearSession()
 	}
 	return err
