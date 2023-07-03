@@ -13,7 +13,7 @@ import (
 	aceql_http "github.com/runner-mei/aceql-http-go"
 )
 
-func DBHTTP(baseURL, dbname, username, password, dbTable string, maxSize int) (*sqlhttpTarget, error) {
+func DBHTTP(baseURL, dbname, username, password, dbTable string, maxSize int, enableSavepoint bool) (*sqlhttpTarget, error) {
 	var c = &aceql_http.Client{
 		BaseURL:       baseURL,
 		LobAutoUpload: true,
@@ -26,11 +26,12 @@ func DBHTTP(baseURL, dbname, username, password, dbTable string, maxSize int) (*
 	target := &sqlhttpTarget{
 		c: c,
 
-		maxSize:      maxSize,
-		dbname:       dbname,
-		username:     username,
-		password:     password,
-		dataAsBinary: true,
+		maxSize:         maxSize,
+		dbname:          dbname,
+		username:        username,
+		password:        password,
+		dataAsBinary:    true,
+		enableSavepoint: enableSavepoint,
 
 		insertSql:       DefaultInsertSQL,
 		readSqlByUUID:   DefaultReadSQLByUUID,
@@ -61,6 +62,7 @@ type sqlhttpTarget struct {
 	dbname, username, password string
 	maxSize                    int
 	dataAsBinary               bool
+	enableSavepoint            bool
 
 	insertSql       string
 	readSqlByUUID   string
@@ -274,22 +276,25 @@ func (st *sqlhttpTarget) Write(remotePath string) (io.WriteCloser, error) {
 	// 	return nil, err
 	// }
 	retryCount := 0
+	var savepoint *aceql_http.SavepointResult
 retry:
 	sess, err := st.GetSession()
 	if err != nil {
 		return nil, err
 	}
 
-	savepoint, err := st.c.SetNamedSavepoint(sess, "sp-" + aceql_http.GenerateID())
-	if err != nil {
-		if aceql_http.IsInvalidOrExipredConnection(err) {
-			st.ClearSession()
-			if retryCount < 1 {
-				retryCount = 1
-				goto retry
+	if st.enableSavepoint {
+		savepoint, err = st.c.SetNamedSavepoint(sess, "sp-"+aceql_http.GenerateID())
+		if err != nil {
+			if aceql_http.IsInvalidOrExipredConnection(err) {
+				st.ClearSession()
+				if retryCount < 1 {
+					retryCount = 1
+					goto retry
+				}
 			}
+			return nil, err
 		}
-		return nil, err
 	}
 
 	return &sqlhttpFileWriter{

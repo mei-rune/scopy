@@ -23,7 +23,7 @@ func TestSqlHttp(t *testing.T) {
 	fmt.Println("sqlhttp_db_password =", dbpassword)
 
 	target, err := DBHTTP(dburl,
-		dbname, dbusername, dbpassword, "", 0)
+		dbname, dbusername, dbpassword, "", 0, true)
 	if err != nil {
 		t.Error(err)
 		return

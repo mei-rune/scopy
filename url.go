@@ -27,8 +27,8 @@ func Open(urlstr, username, password string) (Session, string, error) {
 		dbname := queryParams.Get("sc_dbname")
 		dbTable := queryParams.Get("sc_dbtable")
 		maxSize, _ := strconv.Atoi(queryParams.Get("sc_max_size"))
-
-		sess, err = DBHTTP(u.String(), dbname, username, password, dbTable, maxSize)
+		enableSavepoint := strings.ToLower(queryParams.Get("sc_max_size")) == "true"
+		sess, err = DBHTTP(u.String(), dbname, username, password, dbTable, maxSize, enableSavepoint)
 		if err != nil {
 			return nil, "", errWrap(err, "连接失败")
 		}
