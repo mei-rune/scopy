@@ -73,6 +73,9 @@ func Open(urlstr, username, password string) (Session, string, error) {
 		default:
 			return nil, "", errors.New("目录不支持")
 		}
+		if err != nil {
+			return nil, "", errWrap(err, "连接失败")
+		}
 	}
 	return sess, remoteDir, nil
 }
