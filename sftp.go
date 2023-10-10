@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/sftp"
 	"github.com/runner-mei/errors"
-	"github.com/mei-rune/goutils/shell"
+	"github.com/mei-rune/shell"
 	"golang.org/x/crypto/ssh"
 )
 
