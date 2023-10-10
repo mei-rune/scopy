@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	aceql_http "github.com/runner-mei/aceql-http-go"
+	aceql_http "github.com/mei-rune/aceql-http-go"
 )
 
 func DBHTTP(baseURL, dbname, username, password, dbTable string, maxSize int, enableSavepoint bool) (*sqlhttpTarget, error) {
