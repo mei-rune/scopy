@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"runtime"
 
 	"github.com/xo/dburl"
 )
@@ -63,6 +64,12 @@ func Open(urlstr, username, password string) (Session, string, error) {
 		}
 
 		switch u.Scheme {
+		case "file":
+			dir := u.Path
+			if runtime.GOOS == "windows" {
+				dir = strings.TrimPrefix(dir, "/")
+			}
+			sess = OS(dir)
 		case "ftp":
 			epsv := u.Query().Get("epsv")
 			disableEPSV := epsv == "false"
