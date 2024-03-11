@@ -3,9 +3,9 @@ package scopy
 import (
 	"errors"
 	"net/url"
+	"runtime"
 	"strconv"
 	"strings"
-	"runtime"
 
 	"github.com/xo/dburl"
 )

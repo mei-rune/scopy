@@ -128,6 +128,19 @@ func DownloadFile(ctx context.Context, sess Session, remotePath, localPath strin
 	return bytes, dstFile.Close()
 }
 
+func DeleteFileIfExists(ctx context.Context, sess Session, remotePath string) (bool, error) {
+	err := sess.Delete(remotePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+var DeleteBeforeUpload = true
+
 func UploadDir(ctx context.Context, dir string, sess Session, remoteDir string, deleteAfter bool) error {
 	fis, err := ioutil.ReadDir(dir)
 	if err != nil {
@@ -149,6 +162,12 @@ func UploadDir(ctx context.Context, dir string, sess Session, remoteDir string, 
 			}
 		} else {
 			remoteFile = filepath.ToSlash(remoteFile)
+			if DeleteBeforeUpload {
+				if _, err = DeleteFileIfExists(ctx, sess, remoteFile); err != nil {
+					return errors.Wrap(err, "上传本地文件 '"+filename+"' 之前先删除， 远程目录 '"+remoteDir+"' 下的同名文件失败")
+				}
+			}
+
 			_, err = UploadFile(ctx, sess, filename, remoteFile)
 			if err != nil {
 				return errors.Wrap(err, "上传本地文件 '"+filename+"' 到远程目录 '"+remoteDir+"' 失败")

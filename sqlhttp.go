@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -580,16 +581,23 @@ func (st *sqlhttpTarget) Delete(remotePath string) error {
 		return err
 	}
 
-	_, err = st.c.ExecuteUpdate(sess, st.deleteSqlByUUID, []aceql_http.ParamValue{
+	count, err := st.c.ExecuteUpdate(sess, st.deleteSqlByUUID, []aceql_http.ParamValue{
 		{
 			Type:  aceql_http.VARCHAR,
 			Value: remotePath,
 		},
 	}, true)
-	if err != nil && aceql_http.IsInvalidOrExipredConnection(err) {
-		st.ClearSession()
+	if err != nil {
+		if aceql_http.IsInvalidOrExipredConnection(err) {
+			st.ClearSession()
+		}
+		return err
 	}
-	return err
+
+	if count == 0 {
+		return os.ErrNotExist
+	}
+	return nil
 }
 
 var (
