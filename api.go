@@ -139,7 +139,7 @@ func DeleteFileIfExists(ctx context.Context, sess Session, remotePath string) (b
 	return true, nil
 }
 
-var DeleteBeforeUpload = true
+var DeleteBeforeUpload = false
 
 func UploadDir(ctx context.Context, dir string, sess Session, remoteDir string, deleteAfter bool) error {
 	fis, err := ioutil.ReadDir(dir)
