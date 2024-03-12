@@ -259,6 +259,8 @@ func (r *dbFileReader) Close() error {
 	return err
 }
 
+var ErrIndexSequence = errors.New("index sequence is error")
+
 func (r *dbFileReader) Read(data []byte) (int, error) {
 	if r.lastErr != nil {
 		return 0, r.lastErr
@@ -294,7 +296,7 @@ func (r *dbFileReader) Read(data []byte) (int, error) {
 		}
 
 		if idx != r.lastIdx+1 {
-			return 0, errors.New("index sequence is error")
+			return 0, ErrIndexSequence
 		}
 		r.lastIdx = idx
 
