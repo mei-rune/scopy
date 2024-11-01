@@ -10,6 +10,17 @@ import (
 	"github.com/xo/dburl"
 )
 
+func Open2(urlstr, username, password string) (Session, error) {
+	sess, dir, err := Open(urlstr, username, password)
+	if err != nil {
+		return nil, err
+	}
+	if dir != "" {
+		return Changedir(sess, dir), nil
+	}
+	return sess, nil
+}
+
 func Open(urlstr, username, password string) (Session, string, error) {
 	var remoteDir string
 	var sess Session

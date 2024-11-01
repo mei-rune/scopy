@@ -4,6 +4,7 @@ import (
 	"io"
 	"io/fs"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -58,6 +59,7 @@ func (st *osTarget) Rename(from, to string) error {
 }
 
 func (st *osTarget) Delete(pa string) error {
+	log.Println("delete file", filepath.Join(st.dir, pa))
 	return os.Remove(filepath.Join(st.dir, pa))
 }
 
