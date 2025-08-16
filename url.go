@@ -89,7 +89,7 @@ func Open(urlstr, username, password string) (Session, string, error) {
 			remoteDir = u.Path
 			sess, err = SFTPWithPassword(u.Host, username, password)
 		default:
-			return nil, "", errors.New("目录不支持")
+			return nil, "", errors.New("目录不支持 - '"+urlstr+"'")
 		}
 		if err != nil {
 			return nil, "", errWrap(err, "连接失败")
