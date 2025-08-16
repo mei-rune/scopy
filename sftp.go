@@ -5,7 +5,7 @@ import (
 	"io/fs"
 	"io/ioutil"
 
-	"github.com/mei-rune/shell"
+	"tech.hengwei.com.cn/go/shell"
 	"github.com/pkg/sftp"
 	"github.com/runner-mei/errors"
 	"golang.org/x/crypto/ssh"
