@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/runner-mei/errors"
-	"github.com/runner-mei/log"
 )
 
 type Session interface {
@@ -141,12 +140,16 @@ func DeleteFileIfExists(ctx context.Context, sess Session, remotePath string) (b
 
 var DeleteBeforeUpload = false
 
-func UploadDir(ctx context.Context, dir string, sess Session, remoteDir string, deleteAfter bool) error {
+type File struct {
+	Local string `json:"local"`
+	Remote string `json:"remote"`
+}
+
+func UploadDir(ctx context.Context, dir string, sess Session, remoteDir string, deleteAfter bool, okFiles *[]File) error {
 	fis, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return errors.Wrap(err, "枚举本地目录失败")
 	}
-	logger := log.LoggerOrEmptyFromContext(ctx)
 
 	for _, fi := range fis {
 		filename := filepath.Join(dir, fi.Name())
@@ -156,7 +159,7 @@ func UploadDir(ctx context.Context, dir string, sess Session, remoteDir string, 
 		}
 
 		if fi.IsDir() {
-			err = UploadDir(ctx, filename, sess, remoteFile, deleteAfter)
+			err = UploadDir(ctx, filename, sess, remoteFile, deleteAfter, okFiles)
 			if err != nil {
 				return err
 			}
@@ -173,7 +176,12 @@ func UploadDir(ctx context.Context, dir string, sess Session, remoteDir string, 
 				return errors.Wrap(err, "上传本地文件 '"+filename+"' 到远程目录 '"+remoteDir+"' 失败")
 			}
 
-			logger.Info("上传文件成功", log.String("local", filename), log.String("remote", remoteFile))
+			// logger.Info("上传文件成功", log.String("local", filename), log.String("remote", remoteFile))
+
+			*okFiles = append(*okFiles, File{
+				Local: filename,
+				Remote: remoteFile,
+			})
 
 			if deleteAfter {
 				err = os.Remove(filename)
@@ -189,6 +197,7 @@ func UploadDir(ctx context.Context, dir string, sess Session, remoteDir string, 
 type ErrDownloadFiles struct {
 	Filenames []string
 	ErrorList []error
+	OkList    []File
 }
 
 func (e *ErrDownloadFiles) Error() string {
@@ -203,12 +212,7 @@ func (e *ErrDownloadFiles) Error() string {
 	return sb.String()
 }
 
-func DownloadDir(ctx context.Context, sess Session, remoteDir string, localDir string, deleteAfter func(remote, local string) bool) error {
-	logger := log.LoggerOrEmptyFromContext(ctx)
-	return downloadDir(ctx, logger, sess, remoteDir, localDir, deleteAfter)
-}
-
-func downloadDir(ctx context.Context, logger log.Logger, sess Session, remoteDir string, localDir string, deleteAfter func(remote, local string) bool) error {
+func DownloadDir(ctx context.Context, sess Session, remoteDir string, localDir string, deleteAfter func(remote, local string) bool, okFiles *[]File) error {
 	fis, err := sess.List(remoteDir)
 	if err != nil {
 		return errors.Wrap(err, "枚举远程目录失败")
@@ -225,7 +229,7 @@ func downloadDir(ctx context.Context, logger log.Logger, sess Session, remoteDir
 		}
 
 		if fi.IsDir() {
-			err = downloadDir(ctx, logger, sess, remoteFile, filename, deleteAfter)
+			err = DownloadDir(ctx, sess, remoteFile, filename, deleteAfter, okFiles)
 			if err != nil {
 				if e, ok := err.(*ErrDownloadFiles); ok {
 					filenames = append(filenames, e.Filenames...)
@@ -250,8 +254,12 @@ func downloadDir(ctx context.Context, logger log.Logger, sess Session, remoteDir
 				// return errors.Wrap(err, "下载远程文件 '"+remoteFile+"' 到本地目录 '"+filename+"'  失败")
 			}
 
-			logger.Info("下载文件成功", log.String("local", filename), log.String("remote", remoteFile))
 
+			// logger.Info("下载文件成功", log.String("local", filename), log.String("remote", remoteFile))
+			*okFiles = append(*okFiles, File{
+				Local: filename,
+				Remote: remoteFile,
+			})
 			if deleteAfter(remoteFile, filename) {
 				err = sess.Delete(remoteFile)
 				if err != nil {
